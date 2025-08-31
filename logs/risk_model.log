@@ -387,3 +387,43 @@ connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection re
 2025-08-28 20:02:44.613 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
 2025-08-28 20:19:24.726 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
 2025-08-28 20:20:20.786 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 20:24:51.589 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 20:31:47.680 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 20:31:51.754 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:17:57.529 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:17:57.529 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:23:10.322 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:29:30.341 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:29:30.354 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:30:22.226 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:30:22.245 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:32:12.550 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:32:12.572 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:32:47.678 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:32:47.680 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:32:58.931 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:32:58.934 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:33:26.368 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:33:26.372 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:33:59.351 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:33:59.353 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:34:11.594 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:34:11.629 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:34:22.876 | INFO     | __main__:predict_single:126 - New patient data saved to database: NEW_TEST_1756397060
+2025-08-28 21:34:22.945 | SUCCESS  | risk.db:update_predictions_in_db:89 - Predictions updated successfully in DB
+2025-08-28 21:34:22.947 | INFO     | __main__:predict_single:137 - Prediction completed and saved for new patient: {'DESYNPUF_ID': 'NEW_TEST_1756397060', 'RISK_30D': 83, 'RISK_60D': 86, 'RISK_90D': 88, 'RISK_LABEL': 'High Risk', 'TOP_3_FEATURES': 'HEARTFAILURE, COMOR_COUNT, BP_S', 'AI_RECOMMENDATIONS': '1. Cardiology consultation for heart failure management | 2. Implement sodium-restricted diet | 3. Daily weight monitoring recommended'}
+2025-08-28 21:34:27.112 | INFO     | risk.db:update_patient_email:160 - Email updated for patient 7C04F6D97F5A2815: test@example.com
+2025-08-28 21:35:37.266 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:35:37.305 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:36:53.799 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:36:59.835 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-28 21:37:16.575 | INFO     | __main__:predict_single:126 - New patient data saved to database: NEW_TEST_1756397234
+2025-08-28 21:37:16.632 | SUCCESS  | risk.db:update_predictions_in_db:89 - Predictions updated successfully in DB
+2025-08-28 21:37:16.633 | INFO     | __main__:predict_single:137 - Prediction completed and saved for new patient: {'DESYNPUF_ID': 'NEW_TEST_1756397234', 'RISK_30D': 83, 'RISK_60D': 86, 'RISK_90D': 88, 'RISK_LABEL': 'High Risk', 'TOP_3_FEATURES': 'HEARTFAILURE, COMOR_COUNT, BP_S', 'AI_RECOMMENDATIONS': '1. Cardiology consultation for heart failure management | 2. Implement sodium-restricted diet | 3. Daily weight monitoring recommended'}
+2025-08-28 21:37:20.797 | INFO     | risk.db:update_patient_email:160 - Email updated for patient 7C04F6D97F5A2815: test@example.com
+2025-08-31 12:11:37.352 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-31 12:11:43.365 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-31 16:50:39.346 | INFO     | risk.email_service:init_email_service:32 - Email service initialized with custom configuration
+2025-08-31 18:49:54.964 | INFO     | __main__:<module>:104 - Loading data for training...
+2025-08-31 18:49:54.965 | INFO     | risk.db:load_data_from_db:12 - Loading data from risk_training
+2025-08-31 18:49:59.698 | SUCCESS  | __main__:<module>:108 - Model trained & saved

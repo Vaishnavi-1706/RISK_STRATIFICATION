@@ -759,3 +759,108 @@ werkzeug.exceptions.BadRequest: 400 Bad Request: Failed to decode JSON object: E
         FROM training
     ]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:59:43.964 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:59:43.965 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM training
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:59:56.989 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:59:58.007 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:59:59.615 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 22:00:00.854 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 22:00:02.424 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 22:00:03.524 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 22:00:04.790 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 22:00:06.372 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

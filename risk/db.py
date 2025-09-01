@@ -2,7 +2,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from risk.logger import logger
-DATABASE_URL = "sqlite:///training.db"
+DATABASE_URL = "sqlite:///risk_data.db"
 
 
 def get_engine():

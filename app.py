@@ -1,20 +1,9 @@
 #!/usr/bin/env python3
 """
-Risk Stratification Web Application (single-file)
-- Replaced old risk.email_service with mail_utils.send_email (now supports attachments)
-- Generates visually enhanced PDF reports (tables + charts) and emails them as attachments
-- Endpoints:
-    /                 -> dashboard (index.html expected in templates/)
-    /api/data         -> patient list (json)
-    /api/summary      -> summary stats (json)
-    /api/health       -> health check
-    /api/predict      -> predict single (POST) - emails PDF if email present
-    /api/predict-all  -> predict missing (POST)
-    /api/send-recommendations-email -> send recommendations email (text or PDF)
-    /api/send-bulk-emails -> send emails to all patients with EMAIL + AI_RECOMMENDATIONS
-    /api/update-patient-email -> update email for patient (POST)
-    /api/export-patient-pdf/<patient_id> -> download PDF
-    /api/send-pdf-email -> generate PDF and email as attachment (POST)
+Risk Stratification Web Application (CSV-based)
+- Reads patient data from trainingk.csv
+- Supports filtering and new patient addition
+- Generates AI recommendations
 """
 
 import os
@@ -23,15 +12,13 @@ import re
 import smtplib
 import traceback
 from datetime import datetime
+import pandas as pd
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 
 from flask import Flask, render_template, jsonify, request, send_file
-
-import pandas as pd
-from sqlalchemy import text
 
 # ReportLab for PDF generation
 from reportlab.lib.pagesizes import A4
@@ -50,8 +37,13 @@ import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 load_dotenv()
 
+# Import AI recommendations and ML model
+from risk.recommendations import get_ai_recommendations
+from risk.model import load_model, assign_label
+from risk.preprocess import preprocess_features, feature_cols, target_cols
+
 # ---------------------------
-# mail_utils (embedded here; you may split into mail_utils.py)
+# Email configuration
 # ---------------------------
 EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
@@ -61,86 +53,125 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", EMAIL_HOST_USER or "no-reply")
 
 def send_email(to_email: str, subject: str, message: str, attachment_bytes: bytes = None, attachment_filename: str = None):
-    """
-    Send an email using SMTP. If attachment_bytes is provided, attach it with attachment_filename.
-    This uses environment variables defined at the top for SMTP configuration.
-    """
+    """Send an email using SMTP with optional attachment"""
     if not (EMAIL_HOST and EMAIL_HOST_USER and EMAIL_HOST_PASSWORD):
-        raise RuntimeError("SMTP configuration is incomplete (EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD required).")
+        raise RuntimeError("SMTP configuration is incomplete")
 
     msg = MIMEMultipart()
     msg["From"] = f"{EMAIL_FROM_NAME} <{EMAIL_HOST_USER}>"
     msg["To"] = to_email
     msg["Subject"] = subject
 
-    # Plain text body
     body = MIMEText(message, "plain")
     msg.attach(body)
 
-    # Attachment if provided
     if attachment_bytes is not None and attachment_filename:
         part = MIMEApplication(attachment_bytes, Name=attachment_filename)
         part['Content-Disposition'] = f'attachment; filename="{attachment_filename}"'
         msg.attach(part)
 
-    # Send via SMTP
     with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
         if EMAIL_USE_TLS:
             server.starttls()
         server.login(EMAIL_HOST_USER, EMAIL_HOST_PASSWORD)
         server.send_message(msg)
 
-    # Simple console info; your original mail_utils had a print
     print(f"[INFO] Email sent to {to_email} (subject: {subject})")
 
 # ---------------------------
-# End mail_utils
+# CSV Data Management
 # ---------------------------
+CSV_FILE = "trainingk.csv"
 
-# ---------------------------
-# App & project-specific imports
-# ---------------------------
-# Replace with your actual risk package imports
-# The app expects functions in risk.db: get_engine, ensure_prediction_columns, update_predictions_in_db, update_predictions_in_db_bulk, update_patient_email, get_patient_by_id
-# and in risk.model: load_model, predict_batch
-# and risk.logger: logger
-# If your risk package differs, adapt these imports or provide appropriate wrappers.
-try:
-    from risk.db import get_engine  # expects SQLAlchemy engine provider
-except Exception:
-    # Provide a fallback that tries sqlite3 connect-based engine if risk.db not available
-    from sqlalchemy import create_engine
-    def get_engine():
-        db_url = os.getenv("DATABASE_URL", "sqlite:///training.db")
-        return create_engine(db_url)
-
-try:
-    from risk.model import load_model, predict_batch
-except Exception:
-    # Fallback stubs (VERY simple; replace with your real model loader and predictor)
-    def load_model(path):
-        print(f"[WARN] load_model fallback used; path={path}")
+# Load ML model
+def load_ml_model():
+    """Load the trained ML model"""
+    try:
+        # Try to load the most recent model
+        model_paths = [
+            "models/risk_model_20250902_010322.pkl"
+        ]
+        
+        for model_path in model_paths:
+            if os.path.exists(model_path):
+                print(f"Loading ML model from {model_path}")
+                return load_model(model_path)
+        
+        print("No ML model found, using fallback prediction")
+        return None
+    except Exception as e:
+        print(f"Error loading ML model: {e}")
         return None
 
-    def predict_batch(df, model):
-        # Example: add dummy columns if prediction not available
-        out = df.copy()
-        # ensure columns exist
-        out['RISK_30D'] = out.get('RISK_30D', 0).fillna(0) if isinstance(out, pd.DataFrame) else 0
-        out['RISK_60D'] = 0
-        out['RISK_90D'] = 0
-        out['RISK_LABEL'] = 'Low Risk'
-        out['TOP_3_FEATURES'] = out.get('TOP_3_FEATURES', 'N/A')
-        out['AI_RECOMMENDATIONS'] = out.get('AI_RECOMMENDATIONS', 'Continue current care plan')
-        return out
+# Load model at startup
+ml_model = load_ml_model()
 
-try:
-    from risk.logger import logger
-except Exception:
-    import logging
-    logger = logging.getLogger("risk_app")
-    if not logger.handlers:
-        logging.basicConfig(level=logging.INFO)
+def predict_single_patient(patient_data, regressors):
+    """Predict risk for a single patient using ML model"""
+    try:
+        # Create DataFrame
+        patient_df = pd.DataFrame([patient_data])
+        
+        # Preprocess
+        processed_df = preprocess_features(patient_df)
+        
+        # Get features
+        X = processed_df[feature_cols].values
+        
+        # Make predictions
+        predictions = {}
+        for col in target_cols:
+            pred = regressors[col].predict(X)
+            predictions[col] = float(pred[0])
+        
+        # Assign risk label
+        risk_label = assign_label(predictions['RISK_30D'])
+        
+        # Generate top features (simplified - using feature importance)
+        top_features = "AGE, TOTAL_CLAIMS_COST, COMOR_COUNT"  # Default
+        
+        # Generate AI recommendations
+        ai_recommendations = get_ai_recommendations(patient_data, top_features)
+        
+        return {
+            'RISK_30D': round(predictions['RISK_30D'], 2),
+            'RISK_60D': round(predictions['RISK_60D'], 2),
+            'RISK_90D': round(predictions['RISK_90D'], 2),
+            'RISK_LABEL': risk_label,
+            'TOP_3_FEATURES': top_features,
+            'AI_RECOMMENDATIONS': ai_recommendations
+        }
+        
+    except Exception as e:
+        print(f"Error in predict_single_patient: {e}")
+        raise e
+
+def load_csv_data():
+    """Load data from CSV file"""
+    try:
+        df = pd.read_csv(CSV_FILE, low_memory=False)
+        return df
+    except Exception as e:
+        print(f"Error loading CSV: {e}")
+        return pd.DataFrame()
+
+def save_csv_data(df):
+    """Save data to CSV file"""
+    try:
+        df.to_csv(CSV_FILE, index=False)
+        return True
+    except Exception as e:
+        print(f"Error saving CSV: {e}")
+        return False
+
+def get_patient_by_id(patient_id: str):
+    """Get patient data by ID"""
+    df = load_csv_data()
+    if df.empty:
+        return pd.DataFrame()
+    
+    patient = df[df['DESYNPUF_ID'] == patient_id]
+    return patient
 
 # ---------------------------
 # Flask app initialization
@@ -148,12 +179,10 @@ except Exception:
 app = Flask(__name__)
 
 # ---------------------------
-# Utilities: PDF creation (table + charts)
+# PDF Generation (same as before)
 # ---------------------------
 def _create_risk_bar_chart_png(risk30, risk60, risk90):
-    """
-    Returns PNG bytes for a simple bar chart of 30/60/90 day risks.
-    """
+    """Create PNG bytes for risk bar chart"""
     fig, ax = plt.subplots(figsize=(6, 3.5))
     labels = ['30-day', '60-day', '90-day']
     values = [risk30 if risk30 is not None else 0,
@@ -172,10 +201,7 @@ def _create_risk_bar_chart_png(risk30, risk60, risk90):
     return buf.getvalue()
 
 def _create_label_pie_chart_png(risk_label):
-    """
-    Small pie or icon-like chart to visualize risk label emphasis.
-    If label not numeric, make a one-slice pie with label in title.
-    """
+    """Create PNG bytes for risk label pie chart"""
     labels = [risk_label if risk_label else 'Unknown']
     sizes = [1]
     fig, ax = plt.subplots(figsize=(4, 2.5))
@@ -190,11 +216,7 @@ def _create_label_pie_chart_png(risk_label):
     return buf.getvalue()
 
 def create_patient_pdf_bytes(patient: dict, include_large_table: bool = True):
-    """
-    Build a PDF report for a single patient and return bytes.
-    - patient: dict-like with keys (DESYNPUF_ID, AGE, GENDER, EMAIL, RISK_30D, RISK_60D, RISK_90D,
-      RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, TOTAL_CLAIMS_COST)
-    """
+    """Build a PDF report for a single patient and return bytes"""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
     elements = []
@@ -217,6 +239,7 @@ def create_patient_pdf_bytes(patient: dict, include_large_table: bool = True):
     <b>Gender:</b> {gender_str}<br/>
     <b>Email:</b> {patient.get('EMAIL', 'Not Provided')}<br/>
     <b>Total Claims Cost:</b> {patient.get('TOTAL_CLAIMS_COST', 'N/A')}<br/>
+    <b>Index Date:</b> {patient.get('INDEX_DATE', 'N/A')}<br/>
     <b>Report Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     """
     elements.append(Paragraph(info_html, normal))
@@ -258,7 +281,6 @@ def create_patient_pdf_bytes(patient: dict, include_large_table: bool = True):
             risk90=(risk_90 if isinstance(risk_90, (int, float)) else (float(risk_90) if str(risk_90).replace('.', '', 1).isdigit() else 0))
         )
         pie_png = _create_label_pie_chart_png(label)
-        # Put images side-by-side: reportlab doesn't have native side-by-side flow, so put one then the other
         bar_img = Image(io.BytesIO(bar_png), width=6 * inch, height=3 * inch)
         elements.append(bar_img)
         elements.append(Spacer(1, 8))
@@ -266,7 +288,7 @@ def create_patient_pdf_bytes(patient: dict, include_large_table: bool = True):
         elements.append(pie_img)
         elements.append(Spacer(1, 12))
     except Exception as chart_err:
-        logger.error(f"Chart generation error: {chart_err}")
+        print(f"Chart generation error: {chart_err}")
         elements.append(Paragraph("Charts unavailable due to rendering error.", normal))
         elements.append(Spacer(1, 8))
 
@@ -276,22 +298,6 @@ def create_patient_pdf_bytes(patient: dict, include_large_table: bool = True):
     elements.append(Paragraph(str(recommendations), normal))
     elements.append(Spacer(1, 12))
 
-    # Optional larger table: if you have extra metrics, include them
-    if include_large_table and isinstance(patient.get('EXTRA_TABLE'), list):
-        # patient['EXTRA_TABLE'] expected as list of rows (list of lists)
-        try:
-            elements.append(Paragraph("<b>Detailed Metrics:</b>", h2_style))
-            big_table = Table(patient['EXTRA_TABLE'], repeatRows=1)
-            big_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#efefef")),
-                ('GRID', (0, 0), (-1, -1), 0.25, colors.HexColor("#dddddd")),
-                ('FONTSIZE', (0, 0), (-1, -1), 8),
-            ]))
-            elements.append(big_table)
-            elements.append(Spacer(1, 12))
-        except Exception:
-            pass
-
     # Footer
     elements.append(Spacer(1, 16))
     elements.append(Paragraph("Generated by Risk Stratification System", styles['Italic']))
@@ -300,24 +306,11 @@ def create_patient_pdf_bytes(patient: dict, include_large_table: bool = True):
     try:
         doc.build(elements)
     except Exception as build_err:
-        logger.error(f"PDF build failed: {build_err}\n{traceback.format_exc()}")
+        print(f"PDF build failed: {build_err}")
         raise
 
     buffer.seek(0)
     return buffer.getvalue()
-
-# ---------------------------
-# Database helpers (safer parameterized queries)
-# ---------------------------
-def read_patient_by_id(patient_id: str):
-    engine = get_engine()
-    query = text("SELECT * FROM training WHERE DESYNPUF_ID = :pid")
-    try:
-        df = pd.read_sql(query, engine, params={"pid": patient_id})
-        return df
-    except Exception as e:
-        logger.error(f"DB read error for patient {patient_id}: {e}")
-        return pd.DataFrame()
 
 # ---------------------------
 # Flask endpoints
@@ -328,30 +321,53 @@ def index():
 
 @app.route('/api/data')
 def api_data():
-    limit = request.args.get('limit', default=10, type=int)
-    engine = get_engine()
-    query = text("""
-        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
-               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
-        FROM training
-        ORDER BY RISK_30D DESC
-        LIMIT :limit
-    """)
-    try:
-        df = pd.read_sql(query, engine, params={"limit": limit})
-    except Exception as e:
-        logger.error(f"Failed to load data: {e}")
-        return jsonify({'error': 'Failed to load data'}), 500
-
+    """Get patient data with filtering support"""
+    limit = request.args.get('limit', default=100, type=int)
+    risk_label = request.args.get('risk_label', default=None)
+    gender = request.args.get('gender', default=None)
+    min_age = request.args.get('min_age', default=None, type=int)
+    max_age = request.args.get('max_age', default=None, type=int)
+    search = request.args.get('search', default=None)
+    
+    # Load data from CSV
+    df = load_csv_data()
     if df.empty:
-        return jsonify({'data': []})
-
+        return jsonify({'error': 'No data available'}), 500
+    
+    # Apply filters
+    if risk_label and risk_label != 'All':
+        df = df[df['RISK_LABEL'] == risk_label]
+    
+    if gender and gender != 'All':
+        gender_value = 1 if gender == 'Male' else 0
+        df = df[df['GENDER'] == gender_value]
+    
+    if min_age is not None:
+        df = df[df['AGE'] >= min_age]
+    
+    if max_age is not None:
+        df = df[df['AGE'] <= max_age]
+    
+    if search:
+        search_mask = (
+            df['DESYNPUF_ID'].astype(str).str.contains(search, case=False, na=False) |
+            df['TOP_3_FEATURES'].astype(str).str.contains(search, case=False, na=False) |
+            df['AI_RECOMMENDATIONS'].astype(str).str.contains(search, case=False, na=False)
+        )
+        df = df[search_mask]
+    
+    # Sort by risk and limit
+    df = df.sort_values('RISK_30D', ascending=False)
+    df = df.head(limit)
+    
+    # Convert to JSON format
     def row_to_dict(row):
         gender_val = row.get('GENDER')
         if pd.isna(gender_val):
             gender = 'Unknown'
         else:
             gender = 'Male' if int(gender_val) == 1 else 'Female'
+        
         return {
             'patient_id': str(row.get('DESYNPUF_ID')),
             'age': int(row.get('AGE')) if pd.notna(row.get('AGE')) else None,
@@ -363,353 +379,262 @@ def api_data():
             'risk_label': str(row.get('RISK_LABEL')) if pd.notna(row.get('RISK_LABEL')) else 'Unknown',
             'top_features': str(row.get('TOP_3_FEATURES')) if pd.notna(row.get('TOP_3_FEATURES')) else 'N/A',
             'ai_recommendations': str(row.get('AI_RECOMMENDATIONS')) if pd.notna(row.get('AI_RECOMMENDATIONS')) else 'N/A',
-            'email': str(row.get('EMAIL')) if pd.notna(row.get('EMAIL')) else ''
+            'email': str(row.get('EMAIL')) if pd.notna(row.get('EMAIL')) else '',
+            'index_date': str(row.get('INDEX_DATE')) if pd.notna(row.get('INDEX_DATE')) else 'N/A'
         }
-
+    
     data = [row_to_dict(r) for _, r in df.iterrows()]
     return jsonify({'data': data})
 
 @app.route('/api/summary')
 def api_summary():
-    engine = get_engine()
-    query = text("""
-        SELECT 
-            COUNT(*) as total_patients,
-            AVG(RISK_30D) as avg_risk_30d,
-            AVG(RISK_60D) as avg_risk_60d,
-            AVG(RISK_90D) as avg_risk_90d,
-            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
-            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
-            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
-            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
-            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
-        FROM training
-    """)
-    try:
-        df = pd.read_sql(query, engine)
-        if df.empty:
-            return jsonify({})
-        return jsonify(df.iloc[0].to_dict())
-    except Exception as e:
-        logger.error(f"Summary query failed: {e}")
+    """Get summary statistics"""
+    df = load_csv_data()
+    if df.empty:
         return jsonify({})
+    
+    summary = {
+        'total_patients': len(df),
+        'avg_risk_30d': float(df['RISK_30D'].mean()) if not df['RISK_30D'].isna().all() else 0,
+        'avg_risk_60d': float(df['RISK_60D'].mean()) if not df['RISK_60D'].isna().all() else 0,
+        'avg_risk_90d': float(df['RISK_90D'].mean()) if not df['RISK_90D'].isna().all() else 0,
+        'very_high_risk': int((df['RISK_LABEL'] == 'Very High Risk').sum()),
+        'high_risk': int((df['RISK_LABEL'] == 'High Risk').sum()),
+        'moderate_risk': int((df['RISK_LABEL'] == 'Moderate Risk').sum()),
+        'low_risk': int((df['RISK_LABEL'] == 'Low Risk').sum()),
+        'very_low_risk': int((df['RISK_LABEL'] == 'Very Low Risk').sum())
+    }
+    
+    return jsonify(summary)
 
 @app.route('/api/health')
 def api_health():
-    # Simple DB check
+    """Health check endpoint"""
     try:
-        engine = get_engine()
-        # Keep a cheap query
-        _ = engine.execute(text("SELECT 1")).fetchone()
-        return jsonify({'status': 'healthy', 'database': 'connected'})
+        df = load_csv_data()
+        if df.empty:
+            return jsonify({'status': 'unhealthy', 'data': 'no_data'}), 500
+        return jsonify({'status': 'healthy', 'data': 'csv_loaded', 'records': len(df)})
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return jsonify({'status': 'unhealthy', 'database': 'disconnected'}), 500
+        return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
 @app.route('/api/predict', methods=['POST'])
 def api_predict():
-    """
-    Predict for a single patient. If email exists, generate a PDF and send it as an attachment.
-    Handles new patients (DESYNPUF_ID starts with 'NEW_') by inserting them into DB if needed.
-    """
+    """Predict for a new patient and save to CSV"""
     try:
         data = request.json or {}
-        desynpuf_id = data.get('DESYNPUF_ID')
-        engine = get_engine()
-
-        # New patient flow
-        if desynpuf_id and str(desynpuf_id).startswith('NEW_'):
+        
+        # Generate new patient ID if not provided
+        if not data.get('DESYNPUF_ID'):
+            data['DESYNPUF_ID'] = f"NEW_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Set default values for missing fields (all 29 features)
+        defaults = {
+            # Demographics
+            'GENDER': 1,  # 1=Male, 0=Female
+            # Insurance
+            'PARTA': 12,
+            'PARTB': 12,
+            'HMO': 0,
+            'PARTD': 12,
+            # Chronic conditions
+            'RENAL_DISEASE': 0,
+            'ALZHEIMER': 0,
+            'HEARTFAILURE': 0,
+            'CANCER': 0,
+            'PULMONARY': 0,
+            'OSTEOPOROSIS': 0,
+            'RHEUMATOID': 0,
+            'STROKE': 0,
+            # Vitals
+            'BMI': 25.0,
+            'BP_S': 120.0,
+            'GLUCOSE': 100.0,
+            'HbA1c': 5.5,
+            'CHOLESTEROL': 200.0,
+            # Trends
+            'BP_trend': 0.0,
+            'HbA1c_trend': 0.0,
+            # Costs
+            'OUTPATIENT_COST': 0.0,
+            'ED_COST': 0.0,
+            'TOTAL_CLAIMS_COST': 0.0,
+            # Utilization
+            'IN_ADM': 0,
+            'OUT_VISITS': 0,
+            'ED_VISITS': 0,
+            # Adherence
+            'RX_ADH': 0.8,
+            # Derived
+            'COMOR_COUNT': 0,
+            'COMOR_WEIGHTED_SCORE': 0,
+            'CLAIMS_FLAG': 0,
+            'TOP_3_FEATURES': 'AGE, BMI, GLUCOSE'
+        }
+        
+        for key, value in defaults.items():
+            if key not in data:
+                data[key] = value
+        
+        # Calculate weighted disease score based on chronic conditions
+        disease_weights = {
+            'HEARTFAILURE': 3.0,    # Highest risk - heart failure
+            'STROKE': 2.8,          # Very high risk - stroke
+            'CANCER': 2.5,          # High risk - cancer
+            'RENAL_DISEASE': 2.3,   # High risk - kidney disease
+            'PULMONARY': 2.0,       # Moderate-high risk - lung disease
+            'ALZHEIMER': 1.8,       # Moderate risk - dementia
+            'RHEUMATOID': 1.5,      # Moderate risk - arthritis
+            'OSTEOPOROSIS': 1.2     # Lower risk - bone disease
+        }
+        
+        # Calculate weighted comorbidity score
+        data['COMOR_WEIGHTED_SCORE'] = 0
+        for disease, weight in disease_weights.items():
+            data['COMOR_WEIGHTED_SCORE'] += data.get(disease, 0) * weight
+        
+        # Keep simple count for backward compatibility
+        chronic_conditions = ['ALZHEIMER', 'HEARTFAILURE', 'CANCER', 'PULMONARY', 
+                             'OSTEOPOROSIS', 'RHEUMATOID', 'STROKE', 'RENAL_DISEASE']
+        data['COMOR_COUNT'] = sum(data.get(condition, 0) for condition in chronic_conditions)
+        
+        # Calculate CLAIMS_FLAG
+        data['CLAIMS_FLAG'] = 1 if data.get('TOTAL_CLAIMS_COST', 0) > 0 else 0
+        
+        # Generate risk predictions using ML model
+        if ml_model:
             try:
-                # Ensure prediction columns exist if helper exists
+                # Use the ML model to predict
+                predictions = predict_single_patient(data, ml_model)
+                
+                # Update data with ML predictions
+                data.update(predictions)
+                
+                print(f"ML Model Prediction: 30D={predictions['RISK_30D']:.2f}, 60D={predictions['RISK_60D']:.2f}, 90D={predictions['RISK_90D']:.2f}, Label={predictions['RISK_LABEL']}")
+                
+            except Exception as e:
+                print(f"ML model prediction failed: {e}, using fallback")
+                # Fallback to simple prediction
+                age = float(data.get('AGE', 50))
+                bmi = float(data.get('BMI', 25))
+                glucose = float(data.get('GLUCOSE', 100))
+                
+                risk_30d = min(95, max(5, (age - 30) * 0.5 + (bmi - 20) * 0.3 + (glucose - 80) * 0.1))
+                risk_60d = risk_30d * 1.1
+                risk_90d = risk_30d * 1.2
+                
+                if risk_30d >= 80:
+                    risk_label = 'Very High Risk'
+                elif risk_30d >= 60:
+                    risk_label = 'High Risk'
+                elif risk_30d >= 40:
+                    risk_label = 'Moderate Risk'
+                elif risk_30d >= 20:
+                    risk_label = 'Low Risk'
+                else:
+                    risk_label = 'Very Low Risk'
+                
+                data.update({
+                    'RISK_30D': round(risk_30d, 2),
+                    'RISK_60D': round(risk_60d, 2),
+                    'RISK_90D': round(risk_90d, 2),
+                    'RISK_LABEL': risk_label,
+                    'TOP_3_FEATURES': 'AGE, BMI, GLUCOSE'
+                })
+                
+                ai_recommendations = get_ai_recommendations(data, data.get('TOP_3_FEATURES', 'AGE, BMI, GLUCOSE'))
+                data['AI_RECOMMENDATIONS'] = ai_recommendations
+        else:
+            # Fallback to simple prediction if no ML model
+            age = float(data.get('AGE', 50))
+            bmi = float(data.get('BMI', 25))
+            glucose = float(data.get('GLUCOSE', 100))
+            
+            risk_30d = min(95, max(5, (age - 30) * 0.5 + (bmi - 20) * 0.3 + (glucose - 80) * 0.1))
+            risk_60d = risk_30d * 1.1
+            risk_90d = risk_30d * 1.2
+            
+            if risk_30d >= 80:
+                risk_label = 'Very High Risk'
+            elif risk_30d >= 60:
+                risk_label = 'High Risk'
+            elif risk_30d >= 40:
+                risk_label = 'Moderate Risk'
+            elif risk_30d >= 20:
+                risk_label = 'Low Risk'
+            else:
+                risk_label = 'Very Low Risk'
+            
+            data.update({
+                'RISK_30D': round(risk_30d, 2),
+                'RISK_60D': round(risk_60d, 2),
+                'RISK_90D': round(risk_90d, 2),
+                'RISK_LABEL': risk_label,
+                'TOP_3_FEATURES': 'AGE, BMI, GLUCOSE'
+            })
+            
+            ai_recommendations = get_ai_recommendations(data, data.get('TOP_3_FEATURES', 'AGE, BMI, GLUCOSE'))
+            data['AI_RECOMMENDATIONS'] = ai_recommendations
+        
+        # Load existing CSV and add new patient
+        df = load_csv_data()
+        new_row = pd.DataFrame([data])
+        df = pd.concat([df, new_row], ignore_index=True)
+        
+        # Save updated CSV
+        if save_csv_data(df):
+            # Send email if email provided
+            email_addr = data.get('EMAIL')
+            if email_addr:
                 try:
-                    from risk.db import ensure_prediction_columns
-                    ensure_prediction_columns("trainingk")
-                except Exception:
-                    # non-fatal
-                    pass
-
-                # Save provided data as a new row
-                # Convert to DataFrame and append
-                new_df = pd.DataFrame([data])
-                new_df.to_sql('training', engine, if_exists='append', index=False)
-                logger.info(f"Inserted new patient {desynpuf_id} into database.")
-
-                # Predict
-                model = load_model("models/risk_model.pkl")
-                preds = predict_batch(new_df, model)
-                # Update DB with predictions (if helper exists)
-                try:
-                    from risk.db import update_predictions_in_db
-                    update_predictions_in_db(preds, "trainingk")
-                except Exception:
-                    logger.warning("update_predictions_in_db not available or failed; predictions may not be persisted.")
-
-                pred_record = preds.iloc[0].to_dict()
-
-                # Prepare patient dict for PDF/email
-                patient_dict = {**data, **pred_record}
-                pdf_bytes = create_patient_pdf_bytes(patient_dict)
-                attachment_name = f"patient_report_{desynpuf_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-
-                # Send email if email present
-                email_addr = data.get('EMAIL')
-                if email_addr:
+                    pdf_bytes = create_patient_pdf_bytes(data)
+                    attachment_name = f"patient_report_{data['DESYNPUF_ID']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                    
                     message_body = (
-                        f"Hello,\n\nPlease find attached the risk prediction report for patient {desynpuf_id}.\n\n"
-                        f"Summary:\n30-day: {pred_record.get('RISK_30D')}\n60-day: {pred_record.get('RISK_60D')}\n90-day: {pred_record.get('RISK_90D')}\n"
-                        f"Label: {pred_record.get('RISK_LABEL')}\n\nRegards,\nRisk Stratification System"
+                        f"Hello,\n\nPlease find attached the risk prediction report for patient {data['DESYNPUF_ID']}.\n\n"
+                        f"Summary:\n30-day: {data.get('RISK_30D', 0):.2f}%\n60-day: {data.get('RISK_60D', 0):.2f}%\n90-day: {data.get('RISK_90D', 0):.2f}%\n"
+                        f"Label: {data.get('RISK_LABEL', 'Unknown')}\n\nRegards,\nRisk Stratification System"
                     )
-                    send_email(email_addr, "Patient Risk Prediction Report", message_body, attachment_bytes=pdf_bytes, attachment_filename=attachment_name)
-
-                return jsonify({'success': True, 'predictions': pred_record, 'message': 'New patient predicted and emailed (if address provided).'})
-            except Exception as e:
-                logger.error(f"New patient prediction error: {e}\n{traceback.format_exc()}")
-                return jsonify({'error': str(e)}), 500
-
-        # Existing patient flow
-        if not desynpuf_id:
-            return jsonify({'error': 'DESYNPUF_ID is required for existing patient prediction'}), 400
-
-        # Load existing patient row
-        query = text("SELECT * FROM training WHERE DESYNPUF_ID = :pid")
-        patient_df = pd.read_sql(query, engine, params={"pid": desynpuf_id})
-        if patient_df.empty:
-            return jsonify({'error': f'Patient {desynpuf_id} not found'}), 404
-
-        # Predict using model
-        model = load_model("models/risk_model_20250901_195429.pkl")
-        preds = predict_batch(patient_df, model)
-
-        # Attempt to persist predictions
-        try:
-            from risk.db import update_predictions_in_db
-            update_predictions_in_db(preds, "trainingk")
-        except Exception:
-            logger.warning("update_predictions_in_db not available or failed; predictions may not be persisted.")
-
-        pred_record = preds.iloc[0].to_dict()
-
-        # Build PDF and send as attachment if patient has EMAIL
-        patient_dict = patient_df.iloc[0].to_dict()
-        patient_dict.update(pred_record)  # merge predictions into patient dict
-        pdf_bytes = create_patient_pdf_bytes(patient_dict)
-        attachment_name = f"patient_report_{desynpuf_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-
-        patient_email = patient_dict.get('EMAIL')
-        if patient_email:
-            message_body = (
-                f"Hello,\n\nPlease find attached the risk prediction report for patient {desynpuf_id}.\n\n"
-                f"Summary:\n30-day: {pred_record.get('RISK_30D')}\n60-day: {pred_record.get('RISK_60D')}\n90-day: {pred_record.get('RISK_90D')}\n"
-                f"Label: {pred_record.get('RISK_LABEL')}\n\nRegards,\nRisk Stratification System"
-            )
-            try:
-                send_email(patient_email, "Patient Risk Prediction Report", message_body, attachment_bytes=pdf_bytes, attachment_filename=attachment_name)
-            except Exception as mail_err:
-                logger.error(f"Failed to send prediction email to {patient_email}: {mail_err}")
-
-        return jsonify({'success': True, 'predictions': pred_record, 'message': f'Predicted for {desynpuf_id} (email sent if address present).'})
-    except Exception as e:
-        logger.error(f"Prediction endpoint error: {e}\n{traceback.format_exc()}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/predict-all', methods=['POST'])
-def api_predict_all():
-    """
-    Predict for all patients missing predictions.
-    This endpoint does NOT email attachments by default to avoid sending mass attachments unfiltered.
-    """
-    try:
-        engine = get_engine()
-        query = text("""
-            SELECT * FROM training
-            WHERE RISK_30D IS NULL OR RISK_60D IS NULL OR RISK_90D IS NULL
-            OR RISK_LABEL IS NULL OR TOP_3_FEATURES IS NULL
-        """)
-        df = pd.read_sql(query, engine)
-        if df.empty:
-            return jsonify({'message': 'All patients already have predictions'})
-
-        model = load_model("models/risk_model_20250901_195429.pkl")
-        preds = predict_batch(df, model)
-        try:
-            from risk.db import update_predictions_in_db_bulk
-            update_predictions_in_db_bulk(preds, "trainingk")
-        except Exception:
-            logger.warning("update_predictions_in_db_bulk not available; bulk predictions not persisted.")
-
-        return jsonify({'success': True, 'message': f'Predictions processed for {len(preds)} patients', 'patients_processed': len(preds)})
-    except Exception as e:
-        logger.error(f"Bulk predict failed: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/send-recommendations-email', methods=['POST'])
-def api_send_recommendations_email():
-    """
-    Send recommendations email to a specific patient.
-    If 'as_pdf' boolean is provided and true, send the PDF attachment (preferred).
-    """
-    try:
-        data = request.json or {}
-        patient_id = data.get('patient_id')
-        as_pdf = bool(data.get('as_pdf', True))
-        if not patient_id:
-            return jsonify({'error': 'patient_id required'}), 400
-
-        df = read_patient_by_id(patient_id)
-        if df.empty:
-            return jsonify({'error': f'Patient {patient_id} not found'}), 404
-        patient = df.iloc[0].to_dict()
-        email = patient.get('EMAIL')
-        if not email:
-            return jsonify({'error': 'Patient has no email address'}), 400
-
-        # Build message and optionally PDF
-        message_body = (
-            f"Hello,\n\nThis message contains recommendations for patient {patient_id}.\n\n"
-            f"AI Recommendations:\n{patient.get('AI_RECOMMENDATIONS', 'N/A')}\n\nRegards,\nRisk Stratification System"
-        )
-
-        if as_pdf:
-            pdf_bytes = create_patient_pdf_bytes(patient)
-            filename = f"patient_report_{patient_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            send_email(email, "Patient Recommendations (PDF)", message_body, attachment_bytes=pdf_bytes, attachment_filename=filename)
-            return jsonify({'success': True, 'message': f'PDF recommendations sent to {email}'})
+                    send_email(email_addr, "Patient Risk Prediction Report", message_body, 
+                             attachment_bytes=pdf_bytes, attachment_filename=attachment_name)
+                except Exception as mail_err:
+                    print(f"Failed to send email: {mail_err}")
+            
+            return jsonify({
+                'success': True, 
+                'predictions': {
+                    'RISK_30D': data.get('RISK_30D'),
+                    'RISK_60D': data.get('RISK_60D'),
+                    'RISK_90D': data.get('RISK_90D'),
+                    'RISK_LABEL': data.get('RISK_LABEL'),
+                    'TOP_3_FEATURES': data.get('TOP_3_FEATURES'),
+                    'AI_RECOMMENDATIONS': data.get('AI_RECOMMENDATIONS')
+                },
+                'message': f'New patient {data["DESYNPUF_ID"]} added successfully',
+                'model_used': 'ML Model' if ml_model else 'Fallback Formula'
+            })
         else:
-            send_email(email, "Patient Recommendations", message_body)
-            return jsonify({'success': True, 'message': f'Plain-text recommendations sent to {email}'})
+            return jsonify({'error': 'Failed to save patient data'}), 500
+            
     except Exception as e:
-        logger.error(f"send_recommendations_email error: {e}\n{traceback.format_exc()}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/send-bulk-emails', methods=['POST'])
-def api_send_bulk_emails():
-    """
-    Send recommendation emails (PDF attachments) to all patients that have EMAIL and AI_RECOMMENDATIONS.
-    WARNING: This will generate and send many attachments — use with care.
-    Payload can include {"only_high_risk": true} to restrict.
-    """
-    try:
-        data = request.json or {}
-        only_high_risk = bool(data.get('only_high_risk', False))
-        engine = get_engine()
-        if only_high_risk:
-            query = text("SELECT * FROM training WHERE RISK_LABEL IN ('Very High Risk','High Risk') AND EMAIL IS NOT NULL AND AI_RECOMMENDATIONS IS NOT NULL")
-        else:
-            query = text("SELECT * FROM training WHERE EMAIL IS NOT NULL AND AI_RECOMMENDATIONS IS NOT NULL")
-        df = pd.read_sql(query, engine)
-        if df.empty:
-            return jsonify({'message': 'No patients matched criteria'})
-
-        success = 0
-        total = len(df)
-        for _, row in df.iterrows():
-            try:
-                patient = row.to_dict()
-                email = patient.get('EMAIL')
-                if not email:
-                    continue
-                pdf_bytes = create_patient_pdf_bytes(patient)
-                filename = f"patient_report_{patient.get('DESYNPUF_ID')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                message_body = f"Hello,\n\nAttached is the patient risk report for {patient.get('DESYNPUF_ID')}.\n\nRegards,\nRisk Stratification System"
-                send_email(email, "Patient Risk Report", message_body, attachment_bytes=pdf_bytes, attachment_filename=filename)
-                success += 1
-            except Exception as e:
-                logger.error(f"Failed to send to {row.get('DESYNPUF_ID')} ({row.get('EMAIL')}): {e}")
-                continue
-
-        return jsonify({'success': True, 'message': f'Emails sent to {success}/{total} patients', 'emails_sent': success, 'total': total})
-    except Exception as e:
-        logger.error(f"Bulk send failed: {e}\n{traceback.format_exc()}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/update-patient-email', methods=['POST'])
-def api_update_patient_email():
-    try:
-        data = request.json or {}
-        patient_id = data.get('patient_id')
-        email = data.get('email')
-        if not patient_id or not email:
-            return jsonify({'error': 'patient_id and email required'}), 400
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        if not re.match(email_pattern, email):
-            return jsonify({'error': 'invalid email format'}), 400
-
-        try:
-            from risk.db import update_patient_email
-            success = update_patient_email(patient_id, email)
-        except Exception:
-            # fallback SQL update
-            try:
-                engine = get_engine()
-                engine.execute(text("UPDATE risk_score SET EMAIL = :email WHERE DESYNPUF_ID = :pid"), {"email": email, "pid": patient_id})
-                success = True
-            except Exception as up_err:
-                logger.error(f"Failed to update email in DB fallback: {up_err}")
-                success = False
-
-        if success:
-            return jsonify({'success': True, 'message': f'Email updated for {patient_id}'})
-        return jsonify({'success': False, 'error': 'failed to update email'}), 500
-    except Exception as e:
-        logger.error(f"update_patient_email endpoint error: {e}\n{traceback.format_exc()}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/export-patient-pdf/<patient_id>')
-def api_export_patient_pdf(patient_id):
-    try:
-        df = read_patient_by_id(patient_id)
-        if df.empty:
-            return jsonify({'error': f'Patient {patient_id} not found'}), 404
-        patient = df.iloc[0].to_dict()
-        pdf_bytes = create_patient_pdf_bytes(patient)
-        filename = f"patient_recommendations_{patient_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        return send_file(io.BytesIO(pdf_bytes), as_attachment=True, download_name=filename, mimetype='application/pdf')
-    except Exception as e:
-        logger.error(f"export PDF error: {e}\n{traceback.format_exc()}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/send-pdf-email', methods=['POST'])
-def api_send_pdf_email():
-    try:
-        data = request.json or {}
-        patient_id = data.get('patient_id')
-        if not patient_id:
-            return jsonify({'error': 'patient_id required'}), 400
-        df = read_patient_by_id(patient_id)
-        if df.empty:
-            return jsonify({'error': f'Patient {patient_id} not found'}), 404
-        patient = df.iloc[0].to_dict()
-        email = patient.get('EMAIL')
-        if not email:
-            return jsonify({'error': 'Patient has no email'}), 400
-        pdf_bytes = create_patient_pdf_bytes(patient)
-        filename = f"patient_report_{patient_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        message_body = f"Hello,\n\nAttached is the patient risk assessment report for {patient_id}.\n\nRegards,\nRisk Stratification System"
-        send_email(email, "Patient Risk Assessment Report", message_body, attachment_bytes=pdf_bytes, attachment_filename=filename)
-        return jsonify({'success': True, 'message': f'PDF sent to {email}'})
-    except Exception as e:
-        logger.error(f"send_pdf_email endpoint error: {e}\n{traceback.format_exc()}")
+        print(f"Prediction error: {e}\n{traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 # ---------------------------
 # App run
 # ---------------------------
 if __name__ == '__main__':
-    # ensure templates directory
+    # Ensure templates directory
     os.makedirs('templates', exist_ok=True)
-    # Print endpoints for convenience
-    print("🚀 Starting Risk Stratification Web App...")
+    
+    print("🚀 Starting Risk Stratification Web App (CSV-based)...")
     print("📊 Dashboard: http://localhost:5000")
+    print("📁 Data Source: trainingk.csv")
+    print(f"🤖 ML Model: {'Loaded' if ml_model else 'Not Available (using fallback)'}")
     print("API endpoints:")
     print(" - /api/data")
     print(" - /api/summary")
     print(" - /api/health")
     print(" - /api/predict (POST)")
-    print(" - /api/predict-all (POST)")
-    print(" - /api/send-recommendations-email (POST)")
-    print(" - /api/send-bulk-emails (POST)")
-    print(" - /api/update-patient-email (POST)")
-    print(" - /api/export-patient-pdf/<patient_id>")
-    print(" - /api/send-pdf-email (POST)")
 
     app.run(host='0.0.0.0', port=int(os.getenv("PORT", 5000)), debug=True)

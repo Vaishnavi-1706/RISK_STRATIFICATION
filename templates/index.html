@@ -202,6 +202,49 @@
                                     </div>
                                 </div>
 
+                                <!-- New fields: PartA, PartB, HMO, PartD, Index Date, Email -->
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="patient-parta" class="form-label">Part A</label>
+                                            <input type="number" class="form-control" id="patient-parta" min="0" max="12" value="12">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="patient-partb" class="form-label">Part B</label>
+                                            <input type="number" class="form-control" id="patient-partb" min="0" max="12" value="12">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="patient-hmo" class="form-label">HMO</label>
+                                            <input type="number" class="form-control" id="patient-hmo" min="0" max="1" value="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="patient-partd" class="form-label">Part D</label>
+                                            <input type="number" class="form-control" id="patient-partd" min="0" max="12" value="12">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="patient-index-date" class="form-label">Index Date</label>
+                                            <input type="date" class="form-control" id="patient-index-date">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="patient-email" class="form-label">Email Address</label>
+                                            <input type="email" class="form-control" id="patient-email" placeholder="patient@example.com">
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="row">
                                     <div class="col-md-3">
                                         <div class="mb-3">
@@ -362,11 +405,11 @@
                         <label class="form-label mb-0 small">Risk Label</label>
                         <select id="filter-risk-label" class="form-select form-select-sm">
                             <option value="">All</option>
-                            <option>Very High</option>
-                            <option>High</option>
-                            <option>Moderate</option>
-                            <option>Low</option>
-                            <option>Very Low</option>
+                            <option>Very High Risk</option>
+                            <option>High Risk</option>
+                            <option>Moderate Risk</option>
+                            <option>Low Risk</option>
+                            <option>Very Low Risk</option>
                         </select>
                     </div>
 
@@ -444,6 +487,7 @@
                                         <th>Age</th>
                                         <th>Gender</th>
                                         <th>Claims Cost</th>
+                                        <th>Index Date</th>
                                         <th>30D Risk</th>
                                         <th>60D Risk</th>
                                         <th>90D Risk</th>
@@ -696,9 +740,10 @@
                         <td>${patient.age ?? '-'}</td>
                         <td>${patient.gender ?? '-'}</td>
                         <td>$${claimsCost.toLocaleString()}</td>
-                        <td><span class="badge bg-${getRiskColor(patient.risk_30d)}">${patient.risk_30d ?? '-'}</span></td>
-                        <td><span class="badge bg-${getRiskColor(patient.risk_60d)}">${patient.risk_60d ?? '-'}</span></td>
-                        <td><span class="badge bg-${getRiskColor(patient.risk_90d)}">${patient.risk_90d ?? '-'}</span></td>
+                        <td>${patient.index_date ?? '-'}</td>
+                        <td><span class="badge bg-${getRiskColor(patient.risk_30d)}">${patient.risk_30d ? parseFloat(patient.risk_30d).toFixed(2) : '-'}</span></td>
+                        <td><span class="badge bg-${getRiskColor(patient.risk_60d)}">${patient.risk_60d ? parseFloat(patient.risk_60d).toFixed(2) : '-'}</span></td>
+                        <td><span class="badge bg-${getRiskColor(patient.risk_90d)}">${patient.risk_90d ? parseFloat(patient.risk_90d).toFixed(2) : '-'}</span></td>
                         <td><span class="risk-badge bg-${getRiskLabelColor(patient.risk_label)}">${patient.risk_label ?? '-'}</span></td>
                         <td><small class="text-muted">${(patient.top_features || '-')}</small></td>
                         <td>
@@ -821,7 +866,13 @@
                         OSTEOPOROSIS: document.getElementById('patient-osteoporosis').checked ? 1 : 0,
                         RHEUMATOID: document.getElementById('patient-rheumatoid').checked ? 1 : 0,
                         STROKE: document.getElementById('patient-stroke').checked ? 1 : 0,
-                        RENAL_DISEASE: document.getElementById('patient-renal-disease').checked ? 1 : 0
+                        RENAL_DISEASE: document.getElementById('patient-renal-disease').checked ? 1 : 0,
+                        PARTA: parseInt(document.getElementById('patient-parta').value) || 12,
+                        PARTB: parseInt(document.getElementById('patient-partb').value) || 12,
+                        HMO: parseInt(document.getElementById('patient-hmo').value) || 0,
+                        PARTD: parseInt(document.getElementById('patient-partd').value) || 12,
+                        INDEX_DATE: document.getElementById('patient-index-date').value || new Date().toISOString().split('T')[0],
+                        EMAIL: document.getElementById('patient-email').value || ''
                     };
                 } else {
                     patientData = {
@@ -981,9 +1032,9 @@
         }
 
         function displayPredictionResults(predictions) {
-            document.getElementById('pred-risk-30d').textContent = predictions.RISK_30D;
-            document.getElementById('pred-risk-60d').textContent = predictions.RISK_60D;
-            document.getElementById('pred-risk-90d').textContent = predictions.RISK_90D;
+            document.getElementById('pred-risk-30d').textContent = parseFloat(predictions.RISK_30D).toFixed(2);
+            document.getElementById('pred-risk-60d').textContent = parseFloat(predictions.RISK_60D).toFixed(2);
+            document.getElementById('pred-risk-90d').textContent = parseFloat(predictions.RISK_90D).toFixed(2);
             document.getElementById('pred-risk-label').textContent = predictions.RISK_LABEL;
 
             const risk30dBadge = document.getElementById('pred-risk-30d-badge');

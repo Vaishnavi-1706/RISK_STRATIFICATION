@@ -2,7 +2,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from risk.logger import logger
-DATABASE_URL = "sqlite:///risk_data.db"
+DATABASE_URL = "sqlite:///training.db"
 
 
 def get_engine():
@@ -25,7 +25,7 @@ def load_patient_data() -> pd.DataFrame:
     except Exception as e:
         logger.warning(f"Could not load from beneficiary table: {e}")
         # Fallback to CSV if database table doesn't exist
-        df = pd.read_csv("data/risk_training.csv")
+        df = pd.read_csv("data/trainingk.csv")
         logger.info(f"Loaded {len(df)} rows from CSV fallback")
         return df
 
@@ -145,7 +145,7 @@ def update_patient_email(patient_id, email):
         
         # Update email for the patient
         update_query = text(f"""
-            UPDATE risk_training 
+            UPDATE risk_score 
             SET EMAIL = :email
             WHERE DESYNPUF_ID = :patient_id
         """)
@@ -169,7 +169,7 @@ def get_patient_by_id(patient_id):
     try:
         engine = get_engine()
         query = text(f"""
-            SELECT * FROM risk_training 
+            SELECT * FROM risk_score 
             WHERE DESYNPUF_ID = :patient_id
         """)
         

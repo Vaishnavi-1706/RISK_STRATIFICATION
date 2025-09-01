@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load the dataset
-df = pd.read_csv('index.csv')
+df = pd.read_csv('trainingk.csv')
 print("Current columns:", list(df.columns))
 print("Shape:", df.shape)
 
@@ -27,6 +27,6 @@ if 'EMAIL' not in df.columns:
     print("Added EMAIL column")
 
 # Save updated dataset
-df.to_csv('index.csv', index=False)
+df.to_csv('trainingk.csv', index=False)
 print("Updated dataset saved!")
 print("Final columns:", list(df.columns))

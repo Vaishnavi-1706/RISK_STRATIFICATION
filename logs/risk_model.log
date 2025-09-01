@@ -427,3 +427,335 @@ connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection re
 2025-08-31 18:49:54.964 | INFO     | __main__:<module>:104 - Loading data for training...
 2025-08-31 18:49:54.965 | INFO     | risk.db:load_data_from_db:12 - Loading data from risk_training
 2025-08-31 18:49:59.698 | SUCCESS  | __main__:<module>:108 - Model trained & saved
+2025-09-01 20:03:57.710 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM trainingk
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:03:57.726 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM trainingk
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:12:13.418 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM trainingk
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:12:13.419 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM trainingk
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:16:15.357 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM trainingk
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:16:15.357 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM trainingk
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:16:36.190 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM trainingk
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:16:36.194 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM trainingk
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:38:03.396 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM trainingk
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:38:03.401 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM trainingk
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:46:20.345 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM trainingk
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:46:20.347 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: training
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:56:42.495 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: training
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:56:42.500 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM trainingk
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 20:57:52.105 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: training
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (50,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:15:03.014 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: trainingk
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM trainingk
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:15:03.015 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: training
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:20:45.973 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: training
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM training
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:20:45.974 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: training
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:21:55.037 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such table: training
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM training
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:21:55.038 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such table: training
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:28:31.995 | ERROR    | __main__:api_predict_all:542 - Bulk predict failed: (sqlite3.OperationalError) no such table: training
+[SQL: 
+            SELECT * FROM training
+            WHERE RISK_30D IS NULL OR RISK_60D IS NULL OR RISK_90D IS NULL
+            OR RISK_LABEL IS NULL OR TOP_3_FEATURES IS NULL
+        ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:29:00.734 | ERROR    | __main__:api_send_bulk_emails:622 - Bulk send failed: 400 Bad Request: Failed to decode JSON object: Expecting value: line 1 column 1 (char 0)
+Traceback (most recent call last):
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\wrappers\request.py", line 611, in get_json
+    rv = self.json_module.loads(data)
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\json\provider.py", line 187, in loads
+    return json.loads(s, **kwargs)
+           ~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python313\Lib\json\__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python313\Lib\json\decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python313\Lib\json\decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\DELL\Desktop\k\Patient-Risk-Prediction\app.py", line 592, in api_send_bulk_emails
+    data = request.json or {}
+           ^^^^^^^^^^^^
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\wrappers\request.py", line 560, in json
+    return self.get_json()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\wrappers\request.py", line 620, in get_json
+    rv = self.on_json_loading_failed(e)
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\wrappers.py", line 214, in on_json_loading_failed
+    return super().on_json_loading_failed(e)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\wrappers\request.py", line 645, in on_json_loading_failed
+    raise BadRequest(f"Failed to decode JSON object: {e}")
+werkzeug.exceptions.BadRequest: 400 Bad Request: Failed to decode JSON object: Expecting value: line 1 column 1 (char 0)
+
+2025-09-01 21:30:02.868 | ERROR    | risk.db:ensure_prediction_columns:63 - Error ensuring prediction columns: (sqlite3.OperationalError) no such table: trainingk
+[SQL: ALTER TABLE trainingk ADD COLUMN RISK_30D INTEGER]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:30:02.995 | INFO     | __main__:api_predict:435 - Inserted new patient NEW_1756742402473 into database.
+2025-09-01 21:30:03.288 | WARNING  | __main__:api_predict:445 - update_predictions_in_db not available or failed; predictions may not be persisted.
+2025-09-01 21:58:07.925 | ERROR    | __main__:api_data:343 - Failed to load data: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT DESYNPUF_ID, AGE, GENDER, TOTAL_CLAIMS_COST, 
+               RISK_30D, RISK_60D, RISK_90D, RISK_LABEL, TOP_3_FEATURES, AI_RECOMMENDATIONS, EMAIL
+        FROM training
+        ORDER BY RISK_30D DESC
+        LIMIT ?
+    ]
+[parameters: (100,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-01 21:58:07.925 | ERROR    | __main__:api_summary:394 - Summary query failed: (sqlite3.OperationalError) no such column: RISK_30D
+[SQL: 
+        SELECT 
+            COUNT(*) as total_patients,
+            AVG(RISK_30D) as avg_risk_30d,
+            AVG(RISK_60D) as avg_risk_60d,
+            AVG(RISK_90D) as avg_risk_90d,
+            COUNT(CASE WHEN RISK_LABEL = 'Very High Risk' THEN 1 END) as very_high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'High Risk' THEN 1 END) as high_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Moderate Risk' THEN 1 END) as moderate_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Low Risk' THEN 1 END) as low_risk,
+            COUNT(CASE WHEN RISK_LABEL = 'Very Low Risk' THEN 1 END) as very_low_risk
+        FROM training
+    ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

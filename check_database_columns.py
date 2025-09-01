@@ -11,14 +11,14 @@ def check_columns():
     print("="*40)
     
     try:
-        conn = sqlite3.connect('risk_data.db')
+        conn = sqlite3.connect('training.db')
         cursor = conn.cursor()
         
         # Get table structure
-        cursor.execute("PRAGMA table_info(risk_training)")
+        cursor.execute("PRAGMA table_info(risk_score)")
         columns = cursor.fetchall()
         
-        print(f"📋 Table 'risk_training' has {len(columns)} columns:")
+        print(f"📋 Table 'risk_score' has {len(columns)} columns:")
         print("-" * 40)
         
         for col in columns:
@@ -30,7 +30,7 @@ def check_columns():
         print("="*40)
         
         # Get sample data
-        cursor.execute("SELECT * FROM risk_training LIMIT 3")
+        cursor.execute("SELECT * FROM risk_score LIMIT 3")
         rows = cursor.fetchall()
         
         if rows:

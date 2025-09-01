@@ -12,19 +12,19 @@ def check_database():
     print("="*40)
     
     try:
-        conn = sqlite3.connect('risk_data.db')
+        conn = sqlite3.connect('training.db')
         cursor = conn.cursor()
         
         # Check if table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='risk_training'")
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='risk_score'")
         if cursor.fetchone():
-            print("✅ risk_training table exists")
+            print("✅ risk_score table exists")
         else:
-            print("❌ risk_training table not found")
+            print("❌ risk_score table not found")
             return
         
         # Check table structure
-        cursor.execute("PRAGMA table_info(risk_training)")
+        cursor.execute("PRAGMA table_info(risk_score)")
         columns = cursor.fetchall()
         print(f"\n📋 Table columns ({len(columns)} total):")
         
@@ -42,18 +42,18 @@ def check_database():
             print("\n❌ EMAIL column not found")
         
         # Check total records
-        cursor.execute("SELECT COUNT(*) FROM risk_training")
+        cursor.execute("SELECT COUNT(*) FROM risk_score")
         total_records = cursor.fetchone()[0]
         print(f"\n📊 Total records: {total_records}")
         
         # Check records with emails
         if email_column_exists:
-            cursor.execute("SELECT COUNT(*) FROM risk_training WHERE EMAIL IS NOT NULL AND EMAIL != ''")
+            cursor.execute("SELECT COUNT(*) FROM risk_score WHERE EMAIL IS NOT NULL AND EMAIL != ''")
             email_records = cursor.fetchone()[0]
             print(f"📧 Records with emails: {email_records}")
             
             # Show sample emails
-            cursor.execute("SELECT DESYNPUF_ID, EMAIL FROM risk_training WHERE EMAIL IS NOT NULL AND EMAIL != '' LIMIT 5")
+            cursor.execute("SELECT DESYNPUF_ID, EMAIL FROM risk_score WHERE EMAIL IS NOT NULL AND EMAIL != '' LIMIT 5")
             sample_emails = cursor.fetchall()
             if sample_emails:
                 print("\n📧 Sample email addresses:")
@@ -61,7 +61,7 @@ def check_database():
                     print(f"   - {patient_id}: {email}")
         
         # Check if there are any records with predictions
-        cursor.execute("SELECT COUNT(*) FROM risk_training WHERE RISK_30D IS NOT NULL")
+        cursor.execute("SELECT COUNT(*) FROM risk_score WHERE RISK_30D IS NOT NULL")
         prediction_records = cursor.fetchone()[0]
         print(f"\n🎯 Records with predictions: {prediction_records}")
         

@@ -29,7 +29,7 @@ A comprehensive web application for predicting patient risk using machine learni
 ## 📊 Model Performance
 
 - **Features Used**: 29 comprehensive features
-- **Average R²**: 0.67+ (good predictive power)
+- **Average R²**: 0.93+ (good predictive power)
 - **Risk Predictions**: 30-day, 60-day, 90-day risk scores
 - **Risk Labels**: Very Low, Low, Moderate, High, Very High
 
